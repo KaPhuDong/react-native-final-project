@@ -7,18 +7,27 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import {registerUser} from '../../database/db';
 
 const SignupScreen = () => {
+  const navigation = useNavigation<any>();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSignup = async () => {
     try {
+      if (!username || !password) {
+        Alert.alert('Lỗi', 'Vui lòng nhập đủ thông tin');
+        return;
+      }
       await registerUser(username, password);
-      Alert.alert('Thành công', 'Đăng ký thành công! (Tiêu chí A.6)');
-      setUsername('');
-      setPassword('');
+      Alert.alert('Thành công', 'Đăng ký thành công! Vui lòng đăng nhập.', [
+        {
+          text: 'OK',
+          onPress: () => navigation.navigate('Login'), // Chuyển sang Login
+        },
+      ]);
     } catch (e) {
       Alert.alert('Lỗi', 'Tên đăng nhập đã tồn tại');
     }
@@ -40,10 +49,20 @@ const SignupScreen = () => {
         value={password}
         onChangeText={setPassword}
       />
+
       <TouchableOpacity
         style={[styles.btn, {backgroundColor: '#28a745'}]}
         onPress={handleSignup}>
         <Text style={styles.btnText}>Đăng ký</Text>
+      </TouchableOpacity>
+
+      {/* Nút quay lại đăng nhập */}
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Login')}
+        style={{marginTop: 15}}>
+        <Text style={{color: '#007bff', textAlign: 'center'}}>
+          Đã có tài khoản? Quay lại Đăng nhập
+        </Text>
       </TouchableOpacity>
     </View>
   );

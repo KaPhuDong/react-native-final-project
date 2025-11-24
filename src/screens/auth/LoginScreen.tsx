@@ -16,19 +16,34 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
+    if (!username || !password)
+      return Alert.alert('Lỗi', 'Vui lòng nhập đủ thông tin');
+
     const user = await loginUser(username, password);
     if (user) {
-      Alert.alert('Thành công', `Xin chào ${user.role}: ${user.username}`);
-      setUsername('');
-      setPassword('');
-      // Điều hướng dựa trên Role (Tiêu chí A.7, B.2)
-      if (user.role === 'admin') {
-        navigation.navigate('AdminTab', {user});
-      } else {
-        navigation.navigate('UserTab', {user});
-      }
+      Alert.alert('Thành công', `Chào mừng ${user.username}`, [
+        {
+          text: 'OK',
+          onPress: () => {
+            // Tiêu chí B.2 & A.7: Điều hướng dựa trên Role
+            if (user.role === 'admin') {
+              // Vào Admin Tab
+              navigation.reset({
+                index: 0,
+                routes: [{name: 'AdminTab', params: {user}}],
+              });
+            } else {
+              // Vào User Tab (Nơi có Cart, Profile)
+              navigation.reset({
+                index: 0,
+                routes: [{name: 'UserTab', params: {user}}],
+              });
+            }
+          },
+        },
+      ]);
     } else {
-      Alert.alert('Lỗi', 'Sai thông tin đăng nhập!');
+      Alert.alert('Lỗi', 'Sai tên đăng nhập hoặc mật khẩu!');
     }
   };
 
@@ -37,46 +52,78 @@ const LoginScreen = () => {
       <Text style={styles.title}>ĐĂNG NHẬP</Text>
       <TextInput
         style={styles.input}
-        placeholder="Tên đăng nhập"
+        placeholder="Tên đăng nhập (admin/user)"
         value={username}
         onChangeText={setUsername}
       />
       <TextInput
         style={styles.input}
-        placeholder="Mật khẩu"
+        placeholder="Mật khẩu (123)"
         secureTextEntry
         value={password}
         onChangeText={setPassword}
       />
+
       <TouchableOpacity style={styles.btn} onPress={handleLogin}>
-        <Text style={styles.btnText}>Đăng nhập</Text>
+        <Text style={styles.btnText}>ĐĂNG NHẬP</Text>
+      </TouchableOpacity>
+
+      <View
+        style={{flexDirection: 'row', justifyContent: 'center', marginTop: 20}}>
+        <Text>Chưa có tài khoản? </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+          <Text style={{color: '#007bff', fontWeight: 'bold'}}>
+            Đăng ký ngay
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Nút về Home cho khách */}
+      <TouchableOpacity
+        onPress={() => navigation.navigate('GuestTab')}
+        style={{marginTop: 20}}>
+        <Text
+          style={{
+            textAlign: 'center',
+            color: 'gray',
+            textDecorationLine: 'underline',
+          }}>
+          Về Trang chủ
+        </Text>
       </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, justifyContent: 'center', padding: 20},
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+  },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
+    color: '#007bff',
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 5,
+    padding: 15,
+    marginBottom: 15,
+    borderRadius: 8,
+    fontSize: 16,
   },
   btn: {
     backgroundColor: '#007bff',
     padding: 15,
     alignItems: 'center',
-    borderRadius: 5,
+    borderRadius: 8,
   },
-  btnText: {color: 'white', fontWeight: 'bold'},
+  btnText: {color: 'white', fontWeight: 'bold', fontSize: 16},
 });
 
 export default LoginScreen;
