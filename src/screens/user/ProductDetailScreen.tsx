@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import {addToCart} from '../../database/db';
+import {getProductImage} from '../../utils/imageMap';
 
 const ProductDetailScreen = ({route, navigation}: any) => {
   const {product, user} = route.params; // Nhận thêm user từ params
@@ -34,8 +35,7 @@ const ProductDetailScreen = ({route, navigation}: any) => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {/* Hình ảnh minh họa */}
-      <Image source={require('../../assets/img/anh3.jpg')} style={styles.img} />
+      <Image source={getProductImage(product.img)} style={styles.img} />
 
       <Text style={styles.name}>{product.name}</Text>
       <Text style={styles.price}>{product.price.toLocaleString()} đ</Text>

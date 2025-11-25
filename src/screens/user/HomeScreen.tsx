@@ -8,18 +8,27 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   SafeAreaView,
   StatusBar,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import {useNavigation, useIsFocused} from '@react-navigation/native';
 import {fetchCategories, searchProducts} from '../../database/db';
 import {Product, Category, User} from '../../types';
+import {getProductImage} from '../../utils/imageMap';
 
-// --- SUB-COMPONENTS ---
+// --- CONFIG KÍCH THƯỚC CARD ---
+const {width} = Dimensions.get('window');
+const COLUMN_COUNT = 2;
+const SPACING = 12; // Khoảng cách giữa các card
+const PADDING_HORIZONTAL = 12; // Lề 2 bên màn hình
+// Công thức: (Màn hình - Lề 2 bên - Khoảng cách giữa các cột) / Số cột
+const CARD_WIDTH =
+  (width - PADDING_HORIZONTAL * 2 - SPACING * (COLUMN_COUNT - 1)) /
+  COLUMN_COUNT;
 
-// 1. Header hiển thị User (Nằm trong vùng cố định)
+// ... (Giữ nguyên UserHeader và SearchAndFilter như cũ) ...
 const UserHeader = ({user}: {user?: User}) => (
   <View style={styles.headerRow}>
     <View>
@@ -35,7 +44,6 @@ const UserHeader = ({user}: {user?: User}) => (
   </View>
 );
 
-// 2. Khu vực Tìm kiếm & Lọc (Nằm trong vùng cố định)
 const SearchAndFilter = ({
   search,
   setSearch,
@@ -49,7 +57,6 @@ const SearchAndFilter = ({
 }: any) => {
   return (
     <View style={styles.filterContainer}>
-      {/* Thanh tìm kiếm */}
       <View style={styles.searchBar}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
@@ -61,7 +68,6 @@ const SearchAndFilter = ({
         />
       </View>
 
-      {/* Bộ lọc giá */}
       <View style={styles.priceRow}>
         <Text style={styles.labelPrice}>Giá:</Text>
         <TextInput
@@ -81,7 +87,6 @@ const SearchAndFilter = ({
         />
       </View>
 
-      {/* Danh sách danh mục */}
       <View style={styles.catContainer}>
         <ScrollView
           horizontal
@@ -115,14 +120,11 @@ const SearchAndFilter = ({
   );
 };
 
-// --- MAIN SCREEN ---
-
 const HomeScreen = ({route}: any) => {
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
   const user = route.params?.user;
 
-  // State
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState('');
@@ -130,7 +132,6 @@ const HomeScreen = ({route}: any) => {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
-  // Effect load data
   useEffect(() => {
     if (isFocused) loadData();
   }, [isFocused, search, selectedCat, minPrice, maxPrice]);
@@ -147,7 +148,6 @@ const HomeScreen = ({route}: any) => {
     setProducts(prods);
   };
 
-  // Render Banner (ListHeaderComponent)
   const renderHeaderList = () => (
     <View style={styles.bannerContainer}>
       <Image
@@ -162,7 +162,6 @@ const HomeScreen = ({route}: any) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-      {/* --- A. FIXED HEADER (Dính trên cùng) --- */}
       <View style={styles.fixedHeader}>
         <UserHeader user={user} />
         <SearchAndFilter
@@ -178,14 +177,13 @@ const HomeScreen = ({route}: any) => {
         />
       </View>
 
-      {/* --- B. SCROLLABLE CONTENT (Danh sách sản phẩm) --- */}
       <FlatList
         data={products}
         keyExtractor={item => item.id.toString()}
-        numColumns={2}
-        ListHeaderComponent={renderHeaderList} // Banner nằm ở đây
+        numColumns={COLUMN_COUNT}
+        ListHeaderComponent={renderHeaderList}
         contentContainerStyle={styles.listContent}
-        columnWrapperStyle={styles.columnWrapper} // Căn đều 2 cột
+        columnWrapperStyle={styles.columnWrapper}
         showsVerticalScrollIndicator={false}
         renderItem={({item}) => (
           <TouchableOpacity
@@ -194,15 +192,10 @@ const HomeScreen = ({route}: any) => {
             onPress={() =>
               navigation.navigate('ProductDetail', {product: item, user: user})
             }>
-            {/* Ảnh tràn viền */}
             <View style={styles.imageContainer}>
-              <Image
-                source={require('../../assets/img/anh3.jpg')} // Thay bằng {uri: item.image} nếu có
-                style={styles.img}
-              />
+              <Image source={getProductImage(item.img)} style={styles.img} />
             </View>
 
-            {/* Thông tin sản phẩm */}
             <View style={styles.infoContainer}>
               <Text style={styles.name} numberOfLines={2}>
                 {item.name}
@@ -216,28 +209,21 @@ const HomeScreen = ({route}: any) => {
   );
 };
 
-// --- STYLES ---
-
-const {width} = Dimensions.get('window');
-const cardWidth = (width - 30) / 2; // (Màn hình - padding 2 bên - khoảng giữa) / 2
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa', // Màu nền tổng thể sáng nhẹ
+    backgroundColor: '#f8f9fa',
   },
-
-  // --- Styles Fixed Header ---
+  // --- Fixed Header ---
   fixedHeader: {
     backgroundColor: '#fff',
     paddingBottom: 10,
-    // Tạo bóng đổ để tách biệt với nội dung cuộn bên dưới
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.05,
     shadowRadius: 5,
     elevation: 5,
-    zIndex: 100, // Đảm bảo luôn nằm trên
+    zIndex: 100,
   },
   headerRow: {
     flexDirection: 'row',
@@ -250,14 +236,11 @@ const styles = StyleSheet.create({
   welcomeText: {fontSize: 12, color: '#888'},
   userName: {fontWeight: 'bold', fontSize: 16, color: '#333'},
   avatar: {width: 36, height: 36, borderRadius: 18},
-
-  filterContainer: {
-    paddingHorizontal: 15,
-  },
+  filterContainer: {paddingHorizontal: 15},
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f2f5', // Nền xám nhạt hiện đại
+    backgroundColor: '#f0f2f5',
     borderRadius: 8,
     paddingHorizontal: 10,
     height: 40,
@@ -269,13 +252,9 @@ const styles = StyleSheet.create({
     height: '100%',
     fontSize: 14,
     color: '#333',
-    paddingVertical: 0, // Fix lỗi text lệch trên Android
+    paddingVertical: 0,
   },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
+  priceRow: {flexDirection: 'row', alignItems: 'center', marginBottom: 8},
   labelPrice: {fontSize: 13, fontWeight: '600', marginRight: 8, color: '#555'},
   priceInput: {
     flex: 1,
@@ -291,8 +270,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   priceDash: {marginHorizontal: 8, color: '#999'},
-
-  catContainer: {height: 36}, // Chiều cao cố định cho hàng category
+  catContainer: {height: 36},
   catBtn: {
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -301,89 +279,77 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f2f5',
     justifyContent: 'center',
   },
-  catActive: {
-    backgroundColor: '#ff5722',
-  },
-  catText: {
-    fontSize: 13,
-    color: '#666',
-    fontWeight: '500',
-  },
-  catTextActive: {
-    color: '#fff',
-    fontWeight: '700',
-  },
+  catActive: {backgroundColor: '#ff5722'},
+  catText: {fontSize: 13, color: '#666', fontWeight: '500'},
+  catTextActive: {color: '#fff', fontWeight: '700'},
 
-  // --- Styles List Content ---
+  // --- List ---
   listContent: {
-    paddingHorizontal: 10,
+    paddingHorizontal: PADDING_HORIZONTAL,
     paddingTop: 15,
     paddingBottom: 20,
   },
   columnWrapper: {
-    justifyContent: 'space-between', // Căn đều 2 bên
+    justifyContent: 'space-between',
   },
-  bannerContainer: {
-    marginBottom: 20,
-  },
+  bannerContainer: {marginBottom: 15},
   banner: {
     width: '100%',
-    height: 150,
+    height: 140, // Giảm chiều cao banner chút cho cân đối
     borderRadius: 12,
     resizeMode: 'cover',
     marginBottom: 10,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
     marginLeft: 5,
   },
 
-  // --- Styles Card Product (Tối ưu) ---
+  // --- Card Product (ĐÃ CHỈNH SỬA) ---
   card: {
-    width: cardWidth, // Kích thước tính toán
+    width: CARD_WIDTH, // Sử dụng kích thước tính toán
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 15,
-    // Quan trọng để ảnh bo theo góc card
+    borderRadius: 10,
+    marginBottom: SPACING, // Khoảng cách dọc
     overflow: 'hidden',
-    // Shadow
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 2,
     borderWidth: 1,
     borderColor: '#f0f0f0',
   },
   imageContainer: {
     width: '100%',
-    height: 150, // Chiều cao ảnh cố định
+    height: 120, // GIẢM TỪ 150 -> 120 ĐỂ CARD NHỎ GỌN
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 10, // Thêm padding trong ảnh để ảnh không sát viền quá
   },
   img: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover', // Lấp đầy khung ảnh
+    resizeMode: 'contain', // Đổi sang contain để thấy toàn bộ sp
   },
   infoContainer: {
-    padding: 10,
+    padding: 8, // Giảm padding
   },
   name: {
-    fontSize: 14,
+    fontSize: 13, // Giảm font
     fontWeight: '500',
     color: '#333',
-    marginBottom: 6,
+    marginBottom: 4,
     lineHeight: 18,
-    minHeight: 36, // Đảm bảo tên ngắn vẫn chiếm đủ 2 dòng để đều card
+    height: 36, // Cố định chiều cao 2 dòng text
   },
   price: {
     color: '#ff5722',
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 14, // Giảm font giá chút
   },
 });
 

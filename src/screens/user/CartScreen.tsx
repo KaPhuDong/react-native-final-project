@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import {useIsFocused} from '@react-navigation/native';
 import {fetchCart, removeFromCart, placeOrder} from '../../database/db';
+import {getProductImage} from '../../utils/imageMap';
 
 const CartScreen = ({route, navigation}: any) => {
   const user = route.params?.user;
@@ -87,10 +88,7 @@ const CartScreen = ({route, navigation}: any) => {
         }
         renderItem={({item}) => (
           <View style={styles.item}>
-            <Image
-              source={require('../../assets/img/anh3.jpg')}
-              style={styles.img}
-            />
+            <Image source={getProductImage(item.img)} style={styles.img} />
             <View style={{flex: 1}}>
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.price}>{item.price.toLocaleString()} đ</Text>

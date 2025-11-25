@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {searchProducts} from '../../database/db';
 import {Product} from '../../types';
+import {getProductImage} from '../../utils/imageMap';
 
 const ProductsByCategoryScreen = ({route, navigation}: any) => {
   const {categoryId, categoryName, user} = route.params;
@@ -41,10 +42,7 @@ const ProductsByCategoryScreen = ({route, navigation}: any) => {
             onPress={() =>
               navigation.navigate('ProductDetail', {product: item, user})
             }>
-            <Image
-              source={require('../../assets/img/anh3.jpg')}
-              style={styles.img}
-            />
+            <Image source={getProductImage(item.img)} style={styles.img} />
             <Text style={styles.name}>{item.name}</Text>
             <Text style={styles.price}>{item.price.toLocaleString()} đ</Text>
           </TouchableOpacity>

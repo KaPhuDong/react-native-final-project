@@ -16,8 +16,15 @@ export const getDb = async (): Promise<SQLiteDatabase> => {
 export const initDatabase = async () => {
   const database = await getDb();
   await database.transaction(tx => {
-    // ... (Giữ nguyên các bảng users, categories, products, cart cũ của bạn) ...
+    // --- 1. XÓA BẢNG CŨ (RESET DATABASE) ---
+    tx.executeSql('DROP TABLE IF EXISTS order_items');
+    tx.executeSql('DROP TABLE IF EXISTS orders');
+    tx.executeSql('DROP TABLE IF EXISTS cart');
+    tx.executeSql('DROP TABLE IF EXISTS products');
+    tx.executeSql('DROP TABLE IF EXISTS categories');
+    tx.executeSql('DROP TABLE IF EXISTS users');
 
+    // --- 2. TẠO BẢNG & DATA USER ---
     tx.executeSql(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,23 +33,23 @@ export const initDatabase = async () => {
         role TEXT
       );
     `);
+    // Tạo 1 Admin và 1 User mẫu
     tx.executeSql(
-      "INSERT OR IGNORE INTO users (username, password, role) VALUES ('admin', '123', 'admin')",
+      "INSERT INTO users (username, password, role) VALUES ('admin', '123', 'admin')",
+    );
+    tx.executeSql(
+      "INSERT INTO users (username, password, role) VALUES ('Dong', 'Dong', 'user')",
     );
 
+    // --- 3. TẠO BẢNG & DATA CATEGORY ---
     tx.executeSql(
       'CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT);',
     );
-    tx.executeSql(
-      "INSERT OR IGNORE INTO categories (id, name) VALUES (1, 'Điện thoại')",
-    );
-    tx.executeSql(
-      "INSERT OR IGNORE INTO categories (id, name) VALUES (2, 'Laptop')",
-    );
-    tx.executeSql(
-      "INSERT OR IGNORE INTO categories (id, name) VALUES (3, 'Phụ kiện')",
-    );
+    tx.executeSql("INSERT INTO categories (id, name) VALUES (1, 'Điện thoại')");
+    tx.executeSql("INSERT INTO categories (id, name) VALUES (2, 'Laptop')");
+    tx.executeSql("INSERT INTO categories (id, name) VALUES (3, 'Phụ kiện')");
 
+    // --- 4. TẠO BẢNG & DATA PRODUCTS (15 SẢN PHẨM MẪU) ---
     tx.executeSql(`
       CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,17 +60,58 @@ export const initDatabase = async () => {
         FOREIGN KEY (categoryId) REFERENCES categories(id)
       );
     `);
-    // (Giữ nguyên các lệnh INSERT mẫu products của bạn)
+
+    // Danh sách 15 sản phẩm mẫu
+    // Cat 1: Điện thoại
     tx.executeSql(
-      "INSERT OR IGNORE INTO products (name, price, img, categoryId) VALUES ('iPhone 15', 25000000, 'anh1.jpg', 1)",
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('iPhone 15', 22990000, 'iphone15.jpg', 1)",
     );
     tx.executeSql(
-      "INSERT OR IGNORE INTO products (name, price, img, categoryId) VALUES ('MacBook Air', 30000000, 'anh2.jpg', 2)",
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('iPhone 16 Pro Max', 34990000, 'iphone16ProMax.jpg', 1)",
     );
     tx.executeSql(
-      "INSERT OR IGNORE INTO products (name, price, img, categoryId) VALUES ('Tai nghe Sony', 2000000, 'anh3.jpg', 3)",
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('iPhone 17', 39990000, 'iphone17.jpg', 1)",
+    );
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('Samsung Galaxy S25', 24990000, 'samsungS25.jpg', 1)",
+    );
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('Samsung Galaxy A17', 6990000, 'samsungA17.jpg', 1)",
+    );
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('Samsung Galaxy A07', 3990000, 'samsungA07.jpg', 1)",
+    );
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('Oppo Find X9', 22990000, 'oppoFindX9.jpg', 1)",
+    );
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('Oppo Reno 14', 11990000, 'oppoReno14.jpg', 1)",
+    );
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('Oppo A6 Pro', 5490000, 'oppoA6Pro.jpg', 1)",
+    );
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('Realme C85', 4290000, 'realmeC85.jpg', 1)",
+    );
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('Vivo V60', 8990000, 'vivoV60.jpg', 1)",
+    );
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('Xiaomi 15T Pro', 14990000, 'xiaomi15TPro.jpg', 1)",
     );
 
+    // Cat 2: Laptop
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('Acer Aspire 7', 12990000, 'acer_latop.jpg', 2)",
+    );
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('Dell Inspiron 15', 16490000, 'dell_laptop.jpg', 2)",
+    );
+    tx.executeSql(
+      "INSERT INTO products (name, price, img, categoryId) VALUES ('MSI Gaming', 28990000, 'gaming_laptop.jpg', 2)",
+    );
+
+    // --- 5. TẠO CÁC BẢNG KHÁC (CART, ORDER) ---
     tx.executeSql(`
       CREATE TABLE IF NOT EXISTS cart (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,7 +123,6 @@ export const initDatabase = async () => {
       );
     `);
 
-    // --- MỚI: Bảng Đơn Hàng (Orders) ---
     tx.executeSql(`
       CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,7 +134,6 @@ export const initDatabase = async () => {
       );
     `);
 
-    // --- MỚI: Bảng Chi Tiết Đơn Hàng (OrderItems) ---
     tx.executeSql(`
       CREATE TABLE IF NOT EXISTS order_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,7 +146,7 @@ export const initDatabase = async () => {
       );
     `);
   });
-  console.log('✅ Database & Tables Initialized');
+  console.log('✅ Database Resetted & Seeded with Sample Data');
 };
 
 // --- USER AUTH & MANAGEMENT ---
@@ -133,7 +179,6 @@ export const deleteUser = async (id: number) => {
   return db.executeSql('DELETE FROM users WHERE id=?', [id]);
 };
 export const updatePassword = async (id: number, pass: string) => {
-  // Mới: Cập nhật thông tin
   const db = await getDb();
   return db.executeSql('UPDATE users SET password=? WHERE id=?', [pass, id]);
 };
@@ -204,6 +249,7 @@ export const deleteProduct = async (id: number) => {
   const db = await getDb();
   return db.executeSql('DELETE FROM products WHERE id=?', [id]);
 };
+
 // --- CART ---
 export const addToCart = async (userId: number, productId: number) => {
   const db = await getDb();
@@ -241,7 +287,7 @@ export const clearCart = async (userId: number) => {
   await db.executeSql('DELETE FROM cart WHERE userId = ?', [userId]);
 };
 
-// --- MỚI: CÁC HÀM XỬ LÝ ĐƠN HÀNG (Order Logic) ---
+// --- ORDER LOGIC ---
 export const placeOrder = async (
   userId: number,
   cartItems: any[],
@@ -250,11 +296,8 @@ export const placeOrder = async (
   const db = await getDb();
 
   try {
-    // 1. Bắt đầu transaction thủ công
-    // Cách này an toàn hơn db.transaction() khi xử lý vòng lặp async
     await db.executeSql('BEGIN TRANSACTION');
 
-    // 2. Tạo đơn hàng vào bảng orders
     const [res] = await db.executeSql(
       "INSERT INTO orders (userId, totalPrice, orderDate, status) VALUES (?, ?, datetime('now','localtime'), 'pending')",
       [userId, total],
@@ -262,7 +305,6 @@ export const placeOrder = async (
 
     const orderId = res.insertId;
 
-    // 3. Lưu chi tiết từng sản phẩm vào bảng order_items
     for (let item of cartItems) {
       await db.executeSql(
         'INSERT INTO order_items (orderId, productId, productName, price, quantity) VALUES (?, ?, ?, ?, ?)',
@@ -270,10 +312,8 @@ export const placeOrder = async (
       );
     }
 
-    // 4. QUAN TRỌNG: Xóa giỏ hàng sau khi đã lưu đơn hàng xong
     await db.executeSql('DELETE FROM cart WHERE userId = ?', [userId]);
 
-    // 5. Chốt transaction (Lưu tất cả thay đổi vào DB)
     await db.executeSql('COMMIT');
     console.log(`✅ Đã tạo đơn hàng ${orderId} và xóa giỏ hàng thành công`);
   } catch (error) {
@@ -293,7 +333,6 @@ export const getOrderHistory = async (userId: number) => {
 };
 
 export const getAllOrders = async () => {
-  // Cho Admin
   const db = await getDb();
   const [res] = await db.executeSql(
     'SELECT o.*, u.username FROM orders o JOIN users u ON o.userId = u.id ORDER BY o.id DESC',
