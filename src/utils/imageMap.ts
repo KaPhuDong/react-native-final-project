@@ -23,7 +23,14 @@ const images: {[key: string]: any} = {
   'hp_laptop.jpg': require('../assets/img/hp_laptop.jpg'), // Nếu có
   'lenovo_laptop.jpg': require('../assets/img/lenovo_laptop.jpg'), // Nếu có
 
-  // 3. Ảnh mặc định/test
+  //3. TV
+  'LGTV.jpg': require('../assets/img/LGTV.jpg'),
+  'samsungTV.jpg': require('../assets/img/samsungTV.jpg'),
+  'samsungTVSmart.jpg': require('../assets/img/samsungTVSmart.jpg'),
+  'toshibaTV.jpg': require('../assets/img/toshibaTV.jpg'),
+  'TLC_GoogleTV.jpg': require('../assets/img/TLC_GoogleTV.jpg'),
+
+  // 4. Ảnh mặc định/test
   'anh1.jpg': require('../assets/img/anh1.jpg'),
   'anh2.jpg': require('../assets/img/anh2.jpg'),
   'anh3.jpg': require('../assets/img/anh3.jpg'),
@@ -38,3 +45,5 @@ export const getProductImage = (imageName: string) => {
   // Trả về ảnh mặc định nếu tên ảnh trong DB không khớp với file nào
   return require('../assets/img/anh3.jpg');
 };
+
+export const imageList = Object.keys(images);

@@ -26,8 +26,9 @@ const CategoryManagement = () => {
   useEffect(() => {
     load();
   }, []);
+
   const load = async () => {
-    setCats(await fetchCategories());
+    setCats(await fetchCategories()); //
   };
 
   const handleSave = async () => {
@@ -53,18 +54,21 @@ const CategoryManagement = () => {
   };
 
   return (
-    <View style={{flex: 1, padding: 15}}>
+    <View style={styles.container}>
       <Text style={styles.title}>QUẢN LÝ DANH MỤC</Text>
+
       {/* Form Thêm/Sửa */}
-      <View style={{flexDirection: 'row', marginBottom: 15}}>
+      <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Tên loại sản phẩm"
+          placeholder="Tên danh mục..."
           value={name}
           onChangeText={setName}
         />
         <TouchableOpacity style={styles.addBtn} onPress={handleSave}>
-          <Text style={{color: 'white'}}>{editId ? 'Lưu' : 'Thêm'}</Text>
+          <Text style={{color: 'white', fontWeight: 'bold'}}>
+            {editId ? 'Lưu' : 'Thêm'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -72,25 +76,24 @@ const CategoryManagement = () => {
         data={cats}
         keyExtractor={item => item.id.toString()}
         renderItem={({item}) => (
-          <View style={styles.item}>
-            <View style={{flex: 1}}>
-              <Text style={{fontWeight: 'bold', fontSize: 16}}>
-                {item.name}
-              </Text>
-              {/* Tiêu chí B.6: Thêm sản phẩm cho loại tương ứng */}
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate('ProductManagement', {
-                    initialCategoryId: item.id,
-                  })
-                }>
-                <Text style={{color: 'blue', fontSize: 12, marginTop: 5}}>
-                  + Thêm sản phẩm vào loại này
-                </Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.itemWrapper}>
+            {/* --- SỬA ĐỔI: Bấm vào vùng này để xem sản phẩm của danh mục --- */}
+            <TouchableOpacity
+              style={styles.infoArea}
+              onPress={() =>
+                navigation.navigate('ProductManagement', {
+                  categoryId: item.id, // Truyền ID để lọc
+                  categoryName: item.name, // Truyền tên để hiển thị tiêu đề
+                })
+              }>
+              <Text style={styles.icon}>📂</Text>
+              <View>
+                <Text style={styles.catName}>{item.name}</Text>
+                <Text style={styles.subText}>👉 Xem & Quản lý sản phẩm</Text>
+              </View>
+            </TouchableOpacity>
 
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <View style={styles.actions}>
               <TouchableOpacity
                 onPress={() => {
                   setName(item.name);
@@ -101,7 +104,7 @@ const CategoryManagement = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => handleDelete(item.id)}
-                style={styles.iconBtn}>
+                style={[styles.iconBtn, {backgroundColor: '#ffebee'}]}>
                 <Text>🗑️</Text>
               </TouchableOpacity>
             </View>
@@ -113,19 +116,21 @@ const CategoryManagement = () => {
 };
 
 const styles = StyleSheet.create({
+  container: {flex: 1, padding: 15, backgroundColor: '#f8f9fa'},
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 20,
     textAlign: 'center',
-    color: '#333',
+    color: '#007bff',
   },
+  inputContainer: {flexDirection: 'row', marginBottom: 20},
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 10,
-    borderRadius: 5,
+    borderColor: '#ddd',
+    padding: 12,
+    borderRadius: 8,
     marginRight: 10,
     backgroundColor: '#fff',
   },
@@ -133,22 +138,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#28a745',
     justifyContent: 'center',
     paddingHorizontal: 20,
-    borderRadius: 5,
+    borderRadius: 8,
   },
-  item: {
+  itemWrapper: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 15,
     backgroundColor: 'white',
     marginBottom: 10,
-    borderRadius: 8,
+    borderRadius: 10,
     elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
   },
+  infoArea: {flex: 1, flexDirection: 'row', alignItems: 'center'}, // Vùng bấm rộng hơn
+  icon: {fontSize: 24, marginRight: 15},
+  catName: {fontSize: 16, fontWeight: 'bold', color: '#333'},
+  subText: {fontSize: 12, color: '#007bff', marginTop: 2},
+  actions: {flexDirection: 'row'},
   iconBtn: {
     padding: 10,
-    marginLeft: 5,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 5,
+    marginLeft: 8,
+    backgroundColor: '#f1f3f5',
+    borderRadius: 8,
   },
 });
 
