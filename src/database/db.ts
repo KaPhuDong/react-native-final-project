@@ -182,6 +182,17 @@ export const updatePassword = async (id: number, pass: string) => {
   const db = await getDb();
   return db.executeSql('UPDATE users SET password=? WHERE id=?', [pass, id]);
 };
+export const checkPassword = async (
+  id: number,
+  pass: string,
+): Promise<boolean> => {
+  const db = await getDb();
+  const [res] = await db.executeSql(
+    'SELECT * FROM users WHERE id=? AND password=?',
+    [id, pass],
+  );
+  return res.rows.length > 0;
+};
 
 // --- PRODUCT & CATEGORY ---
 export const fetchCategories = async (): Promise<Category[]> => {
