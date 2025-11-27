@@ -40,7 +40,7 @@ export const initDatabase = async () => {
       "INSERT INTO users (username, password, role, fullName, phone) VALUES ('admin', '123', 'admin', 'Administrator', '0909000111')",
     );
     tx.executeSql(
-      "INSERT INTO users (username, password, role, fullName, phone) VALUES ('Dong', 'Dong', 'user', 'Người Dùng Mẫu', '0912345678')",
+      "INSERT INTO users (username, password, role, fullName, phone) VALUES ('Dong', 'Dong', 'user', 'Ka Phu Dong', '0912345678')",
     );
 
     // --- 3. TẠO BẢNG & DATA CATEGORY ---
