@@ -16,7 +16,7 @@ export const getDb = async (): Promise<SQLiteDatabase> => {
 export const initDatabase = async () => {
   const database = await getDb();
   await database.transaction(tx => {
-    // --- 1. XÓA BẢNG CŨ (RESET DATABASE) ---
+    // --- 1. XÓA BẢNG CŨ (RESET DATABASE ĐỂ CẬP NHẬT CẤU TRÚC MỚI) ---
     tx.executeSql('DROP TABLE IF EXISTS order_items');
     tx.executeSql('DROP TABLE IF EXISTS orders');
     tx.executeSql('DROP TABLE IF EXISTS cart');
@@ -24,21 +24,23 @@ export const initDatabase = async () => {
     tx.executeSql('DROP TABLE IF EXISTS categories');
     tx.executeSql('DROP TABLE IF EXISTS users');
 
-    // --- 2. TẠO BẢNG & DATA USER ---
+    // --- 2. TẠO BẢNG & DATA USER (Cập nhật: thêm cột fullName, phone) ---
     tx.executeSql(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT,
-        role TEXT
+        role TEXT,
+        fullName TEXT,
+        phone TEXT
       );
     `);
-    // Tạo 1 Admin và 1 User mẫu
+    // Tạo Admin và User mẫu
     tx.executeSql(
-      "INSERT INTO users (username, password, role) VALUES ('admin', '123', 'admin')",
+      "INSERT INTO users (username, password, role, fullName, phone) VALUES ('admin', '123', 'admin', 'Administrator', '0909000111')",
     );
     tx.executeSql(
-      "INSERT INTO users (username, password, role) VALUES ('Dong', 'Dong', 'user')",
+      "INSERT INTO users (username, password, role, fullName, phone) VALUES ('Dong', 'Dong', 'user', 'Người Dùng Mẫu', '0912345678')",
     );
 
     // --- 3. TẠO BẢNG & DATA CATEGORY ---
@@ -62,54 +64,31 @@ export const initDatabase = async () => {
     `);
 
     // Danh sách 15 sản phẩm mẫu
-    // Cat 1: Điện thoại
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('iPhone 15', 22990000, 'iphone15.jpg', 1)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('iPhone 16 Pro Max', 34990000, 'iphone16ProMax.jpg', 1)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('iPhone 17', 39990000, 'iphone17.jpg', 1)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('Samsung Galaxy S25', 24990000, 'samsungS25.jpg', 1)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('Samsung Galaxy A17', 6990000, 'samsungA17.jpg', 1)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('Samsung Galaxy A07', 3990000, 'samsungA07.jpg', 1)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('Oppo Find X9', 22990000, 'oppoFindX9.jpg', 1)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('Oppo Reno 14', 11990000, 'oppoReno14.jpg', 1)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('Oppo A6 Pro', 5490000, 'oppoA6Pro.jpg', 1)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('Realme C85', 4290000, 'realmeC85.jpg', 1)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('Vivo V60', 8990000, 'vivoV60.jpg', 1)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('Xiaomi 15T Pro', 14990000, 'xiaomi15TPro.jpg', 1)",
-    );
+    const sampleProducts = [
+      // Cat 1: Điện thoại
+      "('iPhone 15', 22990000, 'iphone15.jpg', 1)",
+      "('iPhone 16 Pro Max', 34990000, 'iphone16ProMax.jpg', 1)",
+      "('iPhone 17', 39990000, 'iphone17.jpg', 1)",
+      "('Samsung Galaxy S25', 24990000, 'samsungS25.jpg', 1)",
+      "('Samsung Galaxy A17', 6990000, 'samsungA17.jpg', 1)",
+      "('Samsung Galaxy A07', 3990000, 'samsungA07.jpg', 1)",
+      "('Oppo Find X9', 22990000, 'oppoFindX9.jpg', 1)",
+      "('Oppo Reno 14', 11990000, 'oppoReno14.jpg', 1)",
+      "('Oppo A6 Pro', 5490000, 'oppoA6Pro.jpg', 1)",
+      "('Realme C85', 4290000, 'realmeC85.jpg', 1)",
+      "('Vivo V60', 8990000, 'vivoV60.jpg', 1)",
+      "('Xiaomi 15T Pro', 14990000, 'xiaomi15TPro.jpg', 1)",
+      // Cat 2: Laptop
+      "('Acer Aspire 7', 12990000, 'acer_latop.jpg', 2)",
+      "('Dell Inspiron 15', 16490000, 'dell_laptop.jpg', 2)",
+      "('MSI Gaming', 28990000, 'gaming_laptop.jpg', 2)",
+    ];
 
-    // Cat 2: Laptop
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('Acer Aspire 7', 12990000, 'acer_latop.jpg', 2)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('Dell Inspiron 15', 16490000, 'dell_laptop.jpg', 2)",
-    );
-    tx.executeSql(
-      "INSERT INTO products (name, price, img, categoryId) VALUES ('MSI Gaming', 28990000, 'gaming_laptop.jpg', 2)",
-    );
+    sampleProducts.forEach(sql => {
+      tx.executeSql(
+        `INSERT INTO products (name, price, img, categoryId) VALUES ${sql}`,
+      );
+    });
 
     // --- 5. TẠO CÁC BẢNG KHÁC (CART, ORDER) ---
     tx.executeSql(`
@@ -146,7 +125,7 @@ export const initDatabase = async () => {
       );
     `);
   });
-  console.log('✅ Database Resetted & Seeded with Sample Data');
+  console.log('✅ Database Resetted & Seeded with New Schema');
 };
 
 // --- USER AUTH & MANAGEMENT ---
@@ -161,14 +140,31 @@ export const loginUser = async (u: string, p: string): Promise<User | null> => {
 export const registerUser = async (u: string, p: string) => {
   const db = await getDb();
   return db.executeSql(
-    "INSERT INTO users (username, password, role) VALUES (?, ?, 'user')",
-    [u, p],
+    "INSERT INTO users (username, password, role, fullName) VALUES (?, ?, 'user', ?)",
+    [u, p, u],
   );
 };
 export const fetchUsers = async (): Promise<User[]> => {
   const db = await getDb();
   const [res] = await db.executeSql('SELECT * FROM users');
   return res.rows.raw();
+};
+export const getUserById = async (id: number): Promise<User | null> => {
+  const db = await getDb();
+  const [res] = await db.executeSql('SELECT * FROM users WHERE id=?', [id]);
+  return res.rows.length > 0 ? res.rows.item(0) : null;
+};
+export const updateUserInfo = async (
+  id: number,
+  fullName: string,
+  phone: string,
+) => {
+  const db = await getDb();
+  return db.executeSql('UPDATE users SET fullName=?, phone=? WHERE id=?', [
+    fullName,
+    phone,
+    id,
+  ]);
 };
 export const updateUserRole = async (id: number, newRole: string) => {
   const db = await getDb();
@@ -288,6 +284,16 @@ export const fetchCart = async (userId: number) => {
     [userId],
   );
   return results.rows.raw();
+};
+export const updateCartQuantity = async (cartId: number, quantity: number) => {
+  const db = await getDb();
+  if (quantity <= 0) {
+    return db.executeSql('DELETE FROM cart WHERE id = ?', [cartId]);
+  }
+  return db.executeSql('UPDATE cart SET quantity = ? WHERE id = ?', [
+    quantity,
+    cartId,
+  ]);
 };
 export const removeFromCart = async (cartId: number) => {
   const db = await getDb();

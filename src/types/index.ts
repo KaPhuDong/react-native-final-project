@@ -1,6 +1,8 @@
 // Định nghĩa các kiểu dữ liệu dùng chung cho toàn bộ dự án
 
 export interface User {
+  phone: string;
+  fullName: string;
   id: number;
   username: string;
   password?: string;
