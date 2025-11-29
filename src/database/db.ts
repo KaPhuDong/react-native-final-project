@@ -16,15 +16,15 @@ export const getDb = async (): Promise<SQLiteDatabase> => {
 export const initDatabase = async () => {
   const database = await getDb();
   await database.transaction(tx => {
-    // --- 1. XÓA BẢNG CŨ (RESET DATABASE ĐỂ CẬP NHẬT CẤU TRÚC MỚI) ---
+    // --- 1. XÓA BẢNG CŨ ĐỂ CẬP NHẬT SCHEMA MỚI ---
     tx.executeSql('DROP TABLE IF EXISTS order_items');
     tx.executeSql('DROP TABLE IF EXISTS orders');
     tx.executeSql('DROP TABLE IF EXISTS cart');
     tx.executeSql('DROP TABLE IF EXISTS products');
     tx.executeSql('DROP TABLE IF EXISTS categories');
-    tx.executeSql('DROP TABLE IF EXISTS users');
+    tx.executeSql('DROP TABLE IF EXISTS users'); // Quan trọng: Xóa bảng cũ thiếu cột avatar
 
-    // --- 2. TẠO BẢNG & DATA USER (Cập nhật: thêm cột fullName, phone) ---
+    // --- 2. TẠO BẢNG USERS (Đã thêm cột avatar) ---
     tx.executeSql(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,18 +32,20 @@ export const initDatabase = async () => {
         password TEXT,
         role TEXT,
         fullName TEXT,
-        phone TEXT
+        phone TEXT,
+        avatar TEXT
       );
     `);
-    // Tạo Admin và User mẫu
+
+    // Tạo Admin và User mẫu (Có thêm trường avatar mặc định)
     tx.executeSql(
-      "INSERT INTO users (username, password, role, fullName, phone) VALUES ('admin', '123', 'admin', 'Administrator', '0909000111')",
+      "INSERT INTO users (username, password, role, fullName, phone, avatar) VALUES ('admin', '123', 'admin', 'Administrator', '0909000111', 'anh10.png')",
     );
     tx.executeSql(
-      "INSERT INTO users (username, password, role, fullName, phone) VALUES ('Dong', 'Dong', 'user', 'Ka Phu Dong', '0912345678')",
+      "INSERT INTO users (username, password, role, fullName, phone, avatar) VALUES ('Dong', 'Dong', 'user', 'Ka Phu Dong', '0912345678', 'anh10.png')",
     );
 
-    // --- 3. TẠO BẢNG & DATA CATEGORY ---
+    // --- 3. TẠO BẢNG CATEGORY ---
     tx.executeSql(
       'CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT);',
     );
@@ -51,7 +53,7 @@ export const initDatabase = async () => {
     tx.executeSql("INSERT INTO categories (id, name) VALUES (2, 'Laptop')");
     tx.executeSql("INSERT INTO categories (id, name) VALUES (3, 'Phụ kiện')");
 
-    // --- 4. TẠO BẢNG & DATA PRODUCTS (15 SẢN PHẨM MẪU) ---
+    // --- 4. TẠO BẢNG PRODUCTS ---
     tx.executeSql(`
       CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,9 +65,8 @@ export const initDatabase = async () => {
       );
     `);
 
-    // Danh sách 15 sản phẩm mẫu
+    // Danh sách sản phẩm mẫu
     const sampleProducts = [
-      // Cat 1: Điện thoại
       "('iPhone 15', 22990000, 'iphone15.jpg', 1)",
       "('iPhone 16 Pro Max', 34990000, 'iphone16ProMax.jpg', 1)",
       "('iPhone 17', 39990000, 'iphone17.jpg', 1)",
@@ -78,7 +79,6 @@ export const initDatabase = async () => {
       "('Realme C85', 4290000, 'realmeC85.jpg', 1)",
       "('Vivo V60', 8990000, 'vivoV60.jpg', 1)",
       "('Xiaomi 15T Pro', 14990000, 'xiaomi15TPro.jpg', 1)",
-      // Cat 2: Laptop
       "('Acer Aspire 7', 12990000, 'acer_latop.jpg', 2)",
       "('Dell Inspiron 15', 16490000, 'dell_laptop.jpg', 2)",
       "('MSI Gaming', 28990000, 'gaming_laptop.jpg', 2)",
@@ -90,7 +90,7 @@ export const initDatabase = async () => {
       );
     });
 
-    // --- 5. TẠO CÁC BẢNG KHÁC (CART, ORDER) ---
+    // --- 5. TẠO BẢNG CART & ORDER ---
     tx.executeSql(`
       CREATE TABLE IF NOT EXISTS cart (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,7 +108,7 @@ export const initDatabase = async () => {
         userId INTEGER,
         totalPrice REAL,
         orderDate TEXT,
-        status TEXT, -- 'pending', 'completed', 'cancelled'
+        status TEXT,
         FOREIGN KEY (userId) REFERENCES users(id)
       );
     `);
@@ -125,10 +125,10 @@ export const initDatabase = async () => {
       );
     `);
   });
-  console.log('✅ Database Resetted & Seeded with New Schema');
+  console.log('✅ Database Resetted & Seeded with New Schema (Has Avatar)');
 };
 
-// --- USER AUTH & MANAGEMENT ---
+// --- USER FUNCTIONS ---
 export const loginUser = async (u: string, p: string): Promise<User | null> => {
   const db = await getDb();
   const [res] = await db.executeSql(
@@ -137,35 +137,41 @@ export const loginUser = async (u: string, p: string): Promise<User | null> => {
   );
   return res.rows.length > 0 ? res.rows.item(0) : null;
 };
+
 export const registerUser = async (u: string, p: string) => {
   const db = await getDb();
   return db.executeSql(
-    "INSERT INTO users (username, password, role, fullName) VALUES (?, ?, 'user', ?)",
+    "INSERT INTO users (username, password, role, fullName, avatar) VALUES (?, ?, 'user', ?, 'avatar.jpg')",
     [u, p, u],
   );
 };
+
 export const fetchUsers = async (): Promise<User[]> => {
   const db = await getDb();
   const [res] = await db.executeSql('SELECT * FROM users');
   return res.rows.raw();
 };
+
 export const getUserById = async (id: number): Promise<User | null> => {
   const db = await getDb();
   const [res] = await db.executeSql('SELECT * FROM users WHERE id=?', [id]);
   return res.rows.length > 0 ? res.rows.item(0) : null;
 };
+
+// --- HÀM UPDATE USER INFO ĐÃ SỬA ---
 export const updateUserInfo = async (
   id: number,
   fullName: string,
   phone: string,
+  avatar: string, // Thêm tham số avatar
 ) => {
   const db = await getDb();
-  return db.executeSql('UPDATE users SET fullName=?, phone=? WHERE id=?', [
-    fullName,
-    phone,
-    id,
-  ]);
+  return db.executeSql(
+    'UPDATE users SET fullName=?, phone=?, avatar=? WHERE id=?',
+    [fullName, phone, avatar, id], // Thêm giá trị avatar vào mảng tham số
+  );
 };
+
 export const updateUserRole = async (id: number, newRole: string) => {
   const db = await getDb();
   return db.executeSql('UPDATE users SET role=? WHERE id=?', [newRole, id]);
@@ -190,7 +196,7 @@ export const checkPassword = async (
   return res.rows.length > 0;
 };
 
-// --- PRODUCT & CATEGORY ---
+// --- PRODUCT & CATEGORY (Giữ nguyên) ---
 export const fetchCategories = async (): Promise<Category[]> => {
   const db = await getDb();
   const [res] = await db.executeSql('SELECT * FROM categories');
@@ -257,7 +263,7 @@ export const deleteProduct = async (id: number) => {
   return db.executeSql('DELETE FROM products WHERE id=?', [id]);
 };
 
-// --- CART ---
+// --- CART (Giữ nguyên) ---
 export const addToCart = async (userId: number, productId: number) => {
   const db = await getDb();
   const [result] = await db.executeSql(
@@ -304,42 +310,33 @@ export const clearCart = async (userId: number) => {
   await db.executeSql('DELETE FROM cart WHERE userId = ?', [userId]);
 };
 
-// --- ORDER LOGIC ---
+// --- ORDER LOGIC (Giữ nguyên) ---
 export const placeOrder = async (
   userId: number,
   cartItems: any[],
   total: number,
 ) => {
   const db = await getDb();
-
   try {
     await db.executeSql('BEGIN TRANSACTION');
-
     const [res] = await db.executeSql(
       "INSERT INTO orders (userId, totalPrice, orderDate, status) VALUES (?, ?, datetime('now','localtime'), 'pending')",
       [userId, total],
     );
-
     const orderId = res.insertId;
-
     for (let item of cartItems) {
       await db.executeSql(
         'INSERT INTO order_items (orderId, productId, productName, price, quantity) VALUES (?, ?, ?, ?, ?)',
         [orderId, item.productId, item.name, item.price, item.quantity],
       );
     }
-
     await db.executeSql('DELETE FROM cart WHERE userId = ?', [userId]);
-
     await db.executeSql('COMMIT');
-    console.log(`✅ Đã tạo đơn hàng ${orderId} và xóa giỏ hàng thành công`);
   } catch (error) {
-    console.error('❌ Lỗi thanh toán:', error);
     await db.executeSql('ROLLBACK');
     throw error;
   }
 };
-
 export const getOrderHistory = async (userId: number) => {
   const db = await getDb();
   const [res] = await db.executeSql(
@@ -348,7 +345,6 @@ export const getOrderHistory = async (userId: number) => {
   );
   return res.rows.raw();
 };
-
 export const getAllOrders = async () => {
   const db = await getDb();
   const [res] = await db.executeSql(
@@ -356,7 +352,6 @@ export const getAllOrders = async () => {
   );
   return res.rows.raw();
 };
-
 export const updateOrderStatus = async (orderId: number, status: string) => {
   const db = await getDb();
   return db.executeSql('UPDATE orders SET status = ? WHERE id = ?', [

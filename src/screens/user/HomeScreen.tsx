@@ -14,30 +14,31 @@ import {
   ScrollView,
 } from 'react-native';
 import {useNavigation, useIsFocused} from '@react-navigation/native';
-import {fetchCategories, searchProducts} from '../../database/db';
+import {fetchCategories, searchProducts, getUserById} from '../../database/db';
 import {Product, Category, User} from '../../types';
 import {getProductImage} from '../../utils/imageMap';
 
-// --- CONFIG KÍCH THƯỚC CARD ---
 const {width} = Dimensions.get('window');
 const COLUMN_COUNT = 2;
-const SPACING = 12; // Khoảng cách giữa các card
-const PADDING_HORIZONTAL = 12; // Lề 2 bên màn hình
-// Công thức: (Màn hình - Lề 2 bên - Khoảng cách giữa các cột) / Số cột
+const SPACING = 12;
+const PADDING_HORIZONTAL = 12;
 const CARD_WIDTH =
   (width - PADDING_HORIZONTAL * 2 - SPACING * (COLUMN_COUNT - 1)) /
   COLUMN_COUNT;
 
-// ... (Giữ nguyên UserHeader và SearchAndFilter như cũ) ...
+// --- CẬP NHẬT HEADER: Ưu tiên hiển thị fullName ---
 const UserHeader = ({user}: {user?: User}) => (
   <View style={styles.headerRow}>
     <View>
       <Text style={styles.welcomeText}>Chào mừng,</Text>
-      <Text style={styles.userName}>{user ? user.username : 'Khách'}</Text>
+      {/* Sửa: Hiển thị fullName nếu có, nếu không thì hiện username */}
+      <Text style={styles.userName}>
+        {user ? user.fullName || user.username : 'Khách'}
+      </Text>
     </View>
     {user && (
       <Image
-        source={require('../../assets/img/anh10.png')}
+        source={getProductImage(user.avatar || 'avatar.png')}
         style={styles.avatar}
       />
     )}
@@ -123,7 +124,9 @@ const SearchAndFilter = ({
 const HomeScreen = ({route}: any) => {
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
-  const user = route.params?.user;
+  const initialUser = route.params?.user;
+
+  const [currentUser, setCurrentUser] = useState<User | undefined>(initialUser);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -137,6 +140,15 @@ const HomeScreen = ({route}: any) => {
   }, [isFocused, search, selectedCat, minPrice, maxPrice]);
 
   const loadData = async () => {
+    // 1. Cập nhật User (Avatar + FullName)
+    if (initialUser?.id) {
+      const updatedUser = await getUserById(initialUser.id);
+      if (updatedUser) {
+        setCurrentUser(updatedUser);
+      }
+    }
+
+    // 2. Load sản phẩm
     const cats = await fetchCategories();
     setCategories(cats);
     const prods = await searchProducts(
@@ -163,7 +175,7 @@ const HomeScreen = ({route}: any) => {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       <View style={styles.fixedHeader}>
-        <UserHeader user={user} />
+        <UserHeader user={currentUser} />
         <SearchAndFilter
           search={search}
           setSearch={setSearch}
@@ -190,7 +202,10 @@ const HomeScreen = ({route}: any) => {
             style={styles.card}
             activeOpacity={0.9}
             onPress={() =>
-              navigation.navigate('ProductDetail', {product: item, user: user})
+              navigation.navigate('ProductDetail', {
+                product: item,
+                user: currentUser,
+              })
             }>
             <View style={styles.imageContainer}>
               <Image source={getProductImage(item.img)} style={styles.img} />
@@ -214,7 +229,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  // --- Fixed Header ---
   fixedHeader: {
     backgroundColor: '#fff',
     paddingBottom: 10,
@@ -282,8 +296,6 @@ const styles = StyleSheet.create({
   catActive: {backgroundColor: '#ff5722'},
   catText: {fontSize: 13, color: '#666', fontWeight: '500'},
   catTextActive: {color: '#fff', fontWeight: '700'},
-
-  // --- List ---
   listContent: {
     paddingHorizontal: PADDING_HORIZONTAL,
     paddingTop: 15,
@@ -295,7 +307,7 @@ const styles = StyleSheet.create({
   bannerContainer: {marginBottom: 15},
   banner: {
     width: '100%',
-    height: 140, // Giảm chiều cao banner chút cho cân đối
+    height: 140,
     borderRadius: 12,
     resizeMode: 'cover',
     marginBottom: 10,
@@ -306,13 +318,11 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 5,
   },
-
-  // --- Card Product (ĐÃ CHỈNH SỬA) ---
   card: {
-    width: CARD_WIDTH, // Sử dụng kích thước tính toán
+    width: CARD_WIDTH,
     backgroundColor: '#fff',
     borderRadius: 10,
-    marginBottom: SPACING, // Khoảng cách dọc
+    marginBottom: SPACING,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
@@ -324,32 +334,32 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: 120, // GIẢM TỪ 150 -> 120 ĐỂ CARD NHỎ GỌN
+    height: 120,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 10, // Thêm padding trong ảnh để ảnh không sát viền quá
+    padding: 10,
   },
   img: {
     width: '100%',
     height: '100%',
-    resizeMode: 'contain', // Đổi sang contain để thấy toàn bộ sp
+    resizeMode: 'contain',
   },
   infoContainer: {
-    padding: 8, // Giảm padding
+    padding: 8,
   },
   name: {
-    fontSize: 13, // Giảm font
+    fontSize: 13,
     fontWeight: '500',
     color: '#333',
     marginBottom: 4,
     lineHeight: 18,
-    height: 36, // Cố định chiều cao 2 dòng text
+    height: 36,
   },
   price: {
     color: '#ff5722',
     fontWeight: 'bold',
-    fontSize: 14, // Giảm font giá chút
+    fontSize: 14,
   },
 });
 

@@ -35,6 +35,7 @@ const images: {[key: string]: any} = {
   'anh2.jpg': require('../assets/img/anh2.jpg'),
   'anh3.jpg': require('../assets/img/anh3.jpg'),
   'anh10.png': require('../assets/img/anh10.png'),
+  'avatar.jpg': require('../assets/img/avatar-mac-dinh.jpg'),
 };
 
 // Hàm lấy ảnh an toàn (trả về ảnh mặc định nếu không tìm thấy tên)

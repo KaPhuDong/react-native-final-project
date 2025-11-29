@@ -18,27 +18,31 @@ import {
   updateUserInfo,
   getUserById,
 } from '../../database/db';
+// THÊM IMPORT NÀY ĐỂ LẤY ẢNH
+import {getProductImage, imageList} from '../../utils/imageMap';
 
 const ProfileScreen = ({route}: any) => {
   const initialUser = route.params?.user;
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
 
-  // State quản lý user data mới nhất từ DB
   const [currentUser, setCurrentUser] = useState<any>(initialUser);
 
-  // State cho form cập nhật thông tin
+  // State form
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [avatar, setAvatar] = useState('anh10.png'); // State cho Avatar
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // State cho Modal đổi mật khẩu (giữ nguyên code cũ của bạn)
+  // State Modal Avatar
+  const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
+
+  // State Modal Password
   const [modalVisible, setModalVisible] = useState(false);
   const [oldPass, setOldPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
 
-  // Load lại thông tin user mỗi khi vào màn hình
   useEffect(() => {
     if (isFocused && initialUser) {
       refreshUserData();
@@ -51,27 +55,27 @@ const ProfileScreen = ({route}: any) => {
       setCurrentUser(u);
       setFullName(u.fullName || '');
       setPhone(u.phone || '');
+      setAvatar(u.avatar || 'avatar.png');
     }
   };
 
-  // --- TÍNH NĂNG CẬP NHẬT THÔNG TIN (0.25đ) ---
   const handleUpdateInfo = async () => {
     if (!fullName || !phone) {
       Alert.alert('Lỗi', 'Vui lòng nhập họ tên và số điện thoại');
       return;
     }
-    await updateUserInfo(currentUser.id, fullName, phone);
+    // Truyền thêm avatar vào hàm update
+    await updateUserInfo(currentUser.id, fullName, phone, avatar);
     Alert.alert('Thành công', 'Cập nhật thông tin thành công!');
     setIsEditMode(false);
     refreshUserData();
   };
 
   const handleLogout = () => {
-    navigation.reset({index: 0, routes: [{name: 'Login'}]}); // Về Login thay vì UserTab
+    navigation.reset({index: 0, routes: [{name: 'Login'}]});
   };
 
   const handleChangePassword = async () => {
-    // ... (Giữ nguyên logic đổi pass của bạn)
     if (!oldPass || !newPass || !confirmPass)
       return Alert.alert('Lỗi', 'Thiếu thông tin');
     if (newPass !== confirmPass)
@@ -84,21 +88,73 @@ const ProfileScreen = ({route}: any) => {
     ]);
   };
 
+  // --- MODAL CHỌN AVATAR (GIỐNG ADMIN) ---
+  const renderAvatarModal = () => (
+    <Modal
+      visible={isAvatarModalVisible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={() => setIsAvatarModalVisible(false)}>
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Chọn Avatar mới</Text>
+          <ScrollView style={{height: 300}}>
+            <View style={styles.imageGrid}>
+              {imageList.map((imgName, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.imageChoice}
+                  onPress={() => {
+                    setAvatar(imgName);
+                    setIsAvatarModalVisible(false);
+                  }}>
+                  <Image
+                    source={getProductImage(imgName)}
+                    style={styles.modalImg}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+          <TouchableOpacity
+            style={[
+              styles.modalBtn,
+              {backgroundColor: '#dc3545', marginTop: 10},
+            ]}
+            onPress={() => setIsAvatarModalVisible(false)}>
+            <Text style={{color: 'white'}}>Đóng</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+
   if (!currentUser) return null;
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Image
-          source={require('../../assets/img/anh10.png')}
-          style={styles.avatar}
-        />
+        {/* --- KHU VỰC HIỂN THỊ AVATAR --- */}
+        <TouchableOpacity
+          disabled={!isEditMode}
+          onPress={() => setIsAvatarModalVisible(true)}
+          style={{position: 'relative'}}>
+          <Image
+            source={getProductImage(avatar)} // Hiển thị theo state avatar
+            style={styles.avatar}
+          />
+          {isEditMode && (
+            <View style={styles.cameraIcon}>
+              <Text>📷</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
         <Text style={styles.username}>{currentUser.username}</Text>
         <Text style={styles.role}>({currentUser.role})</Text>
       </View>
 
       <View style={styles.body}>
-        {/* FORM THÔNG TIN CÁ NHÂN */}
         <View style={styles.infoCard}>
           <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
 
@@ -133,7 +189,10 @@ const ProfileScreen = ({route}: any) => {
             <View style={styles.rowBtn}>
               <TouchableOpacity
                 style={[styles.smallBtn, {backgroundColor: 'gray'}]}
-                onPress={() => setIsEditMode(false)}>
+                onPress={() => {
+                  setIsEditMode(false);
+                  refreshUserData(); // Reset lại nếu hủy
+                }}>
                 <Text style={{color: 'white'}}>Hủy</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -151,7 +210,7 @@ const ProfileScreen = ({route}: any) => {
           )}
         </View>
 
-        {/* CÁC CHỨC NĂNG KHÁC */}
+        {/* CÁC NÚT CHỨC NĂNG KHÁC GIỮ NGUYÊN */}
         <TouchableOpacity
           style={styles.btn}
           onPress={() =>
@@ -185,8 +244,11 @@ const ProfileScreen = ({route}: any) => {
         </TouchableOpacity>
       </View>
 
-      {/* MODAL ĐỔI PASS (Giữ nguyên cấu trúc của bạn) */}
+      {/* Render các Modal */}
+      {renderAvatarModal()}
+
       <Modal visible={modalVisible} transparent animationType="slide">
+        {/* ... Giữ nguyên nội dung modal đổi pass cũ ... */}
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Đổi Mật Khẩu</Text>
@@ -231,6 +293,7 @@ const ProfileScreen = ({route}: any) => {
 };
 
 const styles = StyleSheet.create({
+  // ... Giữ các style cũ
   container: {flex: 1, backgroundColor: '#f4f4f4'},
   header: {
     alignItems: 'center',
@@ -239,6 +302,16 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   avatar: {width: 80, height: 80, borderRadius: 40, marginBottom: 5},
+  // Thêm style cho icon camera đè lên ảnh
+  cameraIcon: {
+    position: 'absolute',
+    right: 0,
+    bottom: 5,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 2,
+    elevation: 3,
+  },
   username: {fontSize: 20, fontWeight: 'bold'},
   role: {color: 'gray'},
   body: {padding: 15},
@@ -280,7 +353,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginLeft: 10,
   },
-
   btn: {
     backgroundColor: 'white',
     padding: 15,
@@ -292,7 +364,7 @@ const styles = StyleSheet.create({
   },
   btnText: {fontSize: 16, fontWeight: '500', color: '#333'},
 
-  // Modal styles
+  // Styles cho Modal Avatar (Copy từ Admin)
   modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -300,16 +372,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    width: '80%',
+    width: '90%',
     backgroundColor: 'white',
-    padding: 20,
     borderRadius: 10,
+    padding: 20,
+    maxHeight: '80%',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    textAlign: 'center',
     marginBottom: 15,
+    textAlign: 'center',
+  },
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  imageChoice: {
+    width: '30%',
+    aspectRatio: 1,
+    marginBottom: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 5,
+    padding: 5,
+  },
+  modalImg: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
   },
   input: {
     borderWidth: 1,
@@ -319,11 +412,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   modalBtn: {
-    flex: 1,
     padding: 10,
     alignItems: 'center',
     borderRadius: 5,
     marginHorizontal: 5,
+    flex: 1,
   },
 });
 

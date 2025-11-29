@@ -1,5 +1,3 @@
-// Định nghĩa các kiểu dữ liệu dùng chung cho toàn bộ dự án
-
 export interface User {
   phone: string;
   fullName: string;
@@ -7,6 +5,7 @@ export interface User {
   username: string;
   password?: string;
   role: 'admin' | 'user';
+  avatar?: string;
 }
 
 export interface Category {
@@ -33,7 +32,7 @@ export interface Order {
   totalPrice: number;
   orderDate: string;
   status: 'pending' | 'completed' | 'cancelled';
-  username?: string; // Dùng khi join bảng user
+  username?: string;
 }
 
 export type RootStackParamList = {
@@ -43,8 +42,6 @@ export type RootStackParamList = {
   ProductDetail: {product: Product; user?: User};
   ProductsByCategory: {categoryId: number; categoryName: string; user?: User};
   OrderHistory: {user: User};
-
-  // Admin screens
   AdminDashboard: {user: User};
   UserManagement: undefined;
   CategoryManagement: undefined;
